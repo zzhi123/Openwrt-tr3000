@@ -16,3 +16,19 @@
 # Add a feed source
 # echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
+
+# Add OpenClash
+rm -rf package/luci-app-openclash /tmp/OpenClash
+
+git clone --depth 1 \
+  --filter=blob:none \
+  --sparse \
+  --branch master \
+  https://github.com/vernesong/OpenClash.git \
+  /tmp/OpenClash
+
+git -C /tmp/OpenClash sparse-checkout set luci-app-openclash
+
+cp -a /tmp/OpenClash/luci-app-openclash package/
+
+rm -rf /tmp/OpenClash
