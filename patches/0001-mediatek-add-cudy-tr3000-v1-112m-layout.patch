@@ -1,0 +1,101 @@
+diff --git a/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-112m.dts b/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-112m.dts
+new file mode 100644
+index 0000000..5c6d4cf
+--- /dev/null
++++ b/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-112m.dts
+@@ -0,0 +1,26 @@
++// SPDX-License-Identifier: (GPL-2.0 OR MIT)
++
++/dts-v1/;
++#include "mt7981b-cudy-tr3000-v1.dtsi"
++
++/ {
++	model = "Cudy TR3000 v1 (112M Community U-Boot layout)";
++	compatible = "cudy,tr3000-v1-112m", "mediatek,mt7981";
++};
++
++&spi_nand {
++	spi-cal-enable;
++	spi-cal-mode = "read-data";
++	spi-cal-datalen = <7>;
++	spi-cal-data = /bits/ 8 <0x53 0x50 0x49 0x4E 0x41 0x4E 0x44>;
++	spi-cal-addrlen = <5>;
++	spi-cal-addr = /bits/ 32 <0x0 0x0 0x0 0x0 0x0>;
++
++	mediatek,nmbm;
++	mediatek,bmt-max-ratio = <1>;
++	mediatek,bmt-max-reserved-blocks = <64>;
++};
++
++&ubi {
++	reg = <0x5c0000 0x7000000>;
++};
+diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+index de5e6f4..730f9fd 100644
+--- a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
++++ b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+@@ -108,6 +108,7 @@ mediatek_setup_interfaces()
+ 	cudy,m3000-v1|\
+ 	cudy,tr3000-256mb-v1|\
+ 	cudy,tr3000-v1|\
++	cudy,tr3000-v1-112m|\
+ 	cudy,tr3000-v1-ubootmod|\
+ 	glinet,gl-mt2500|\
+ 	glinet,gl-mt3000|\
+diff --git a/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac b/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
+index 0e18f54..e355f5b 100644
+--- a/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
++++ b/target/linux/mediatek/filogic/base-files/etc/hotplug.d/ieee80211/11_fix_wifi_mac
+@@ -72,6 +72,7 @@ case "$board" in
+ 	cudy,re3000-v1|\
+ 	cudy,tr3000-256mb-v1|\
+ 	cudy,tr3000-v1|\
++	cudy,tr3000-v1-112m|\
+ 	cudy,tr3000-v1-ubootmod|\
+ 	cudy,wr3000e-v1|\
+ 	cudy,wr3000s-v1|\
+diff --git a/target/linux/mediatek/filogic/base-files/lib/upgrade/platform.sh b/target/linux/mediatek/filogic/base-files/lib/upgrade/platform.sh
+index f102d4c..0362cb7 100755
+--- a/target/linux/mediatek/filogic/base-files/lib/upgrade/platform.sh
++++ b/target/linux/mediatek/filogic/base-files/lib/upgrade/platform.sh
+@@ -141,6 +141,12 @@ platform_do_upgrade() {
+ 		CI_UBIPART="ubi"
+ 		nand_do_upgrade "$1"
+ 		;;
++	cudy,tr3000-v1-112m)
++		CI_UBIPART="ubi"
++		CI_KERNPART="kernel"
++		CI_ROOTPART="rootfs"
++		nand_do_upgrade "$1"
++		;;
+ 	cudy,re3000-v1|\
+ 	cudy,wr3000-v1|\
+ 	yuncore,ax835|\
+diff --git a/target/linux/mediatek/image/filogic.mk b/target/linux/mediatek/image/filogic.mk
+index d108cd8..359a561 100644
+--- a/target/linux/mediatek/image/filogic.mk
++++ b/target/linux/mediatek/image/filogic.mk
+@@ -847,6 +847,23 @@ define Device/cudy_tr3000-v1
+ endef
+ TARGET_DEVICES += cudy_tr3000-v1
+ 
++define Device/cudy_tr3000-v1-112m
++  DEVICE_VENDOR := Cudy
++  DEVICE_MODEL := TR3000
++  DEVICE_VARIANT := v1 (112M Community U-Boot layout)
++  DEVICE_DTS := mt7981b-cudy-tr3000-v1-112m
++  DEVICE_DTS_DIR := ../dts
++  SUPPORTED_DEVICES += R47
++  UBINIZE_OPTS := -E 5
++  BLOCKSIZE := 128k
++  PAGESIZE := 2048
++  IMAGE_SIZE := 114688k
++  KERNEL_IN_UBI := 1
++  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
++  DEVICE_PACKAGES := kmod-usb3 kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount
++endef
++TARGET_DEVICES += cudy_tr3000-v1-112m
++
+ define Device/cudy_tr3000-v1-ubootmod
+   DEVICE_VENDOR := Cudy
+   DEVICE_MODEL := TR3000

@@ -22,6 +22,7 @@ env:
   BUILD_VARIANT: immortalwrt-official-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
+  PATCH_DIR: patches
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -57,6 +58,15 @@ jobs:
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+    - name: Apply custom patches
+      run: |
+        for patch in "$GITHUB_WORKSPACE/$PATCH_DIR"/*.patch; do
+          [ -e "$patch" ] || continue
+          echo "Applying $patch"
+          git -C openwrt apply --check "$patch"
+          git -C openwrt apply "$patch"
+        done
 
     - name: Load custom feeds
       run: |
