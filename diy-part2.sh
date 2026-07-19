@@ -10,8 +10,20 @@
 # See /LICENSE for more information.
 #
 
-# Modify default IP
-#sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
+set -euo pipefail
+
+# Keep the clean system on the same LAN subnet used by this router.
+# Use a targeted replacement so an upstream layout change makes the build fail
+# instead of silently producing firmware with an unexpected management address.
+config_generate="package/base-files/files/bin/config_generate"
+grep -q 'lan) ipad=${ipaddr:-"192.168.1.1"} ;;' "$config_generate" || {
+    echo "Unable to find the official default LAN address definition" >&2
+    exit 1
+}
+cp "$config_generate" "${config_generate}.tmp"
+sed 's/lan) ipad=${ipaddr:-"192.168.1.1"} ;;/lan) ipad=${ipaddr:-"192.168.6.1"} ;;/' \
+    "$config_generate" > "${config_generate}.tmp"
+mv "${config_generate}.tmp" "$config_generate"
 
 # Modify default theme
 #sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
