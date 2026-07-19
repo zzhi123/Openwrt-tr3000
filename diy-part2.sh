@@ -12,6 +12,29 @@
 
 set -euo pipefail
 
+# Replace the older OpenClash package from the ImmortalWrt LuCI feed with the
+# latest upstream package on every build. This keeps only the LuCI package
+# source in the firmware; the Mihomo core remains user-managed.
+rm -rf package/feeds/luci/luci-app-openclash package/OpenClash
+for attempt in 1 2 3; do
+    rm -rf package/OpenClash
+    if timeout 300 git clone --branch master --single-branch --depth 1 \
+        --filter=blob:none --sparse \
+        https://github.com/vernesong/OpenClash.git package/OpenClash && \
+        timeout 300 git -C package/OpenClash sparse-checkout set \
+        luci-app-openclash; then
+        break
+    fi
+    [ "$attempt" -lt 3 ] || {
+        echo "Unable to download the latest OpenClash source" >&2
+        exit 1
+    }
+done
+test -f package/OpenClash/luci-app-openclash/Makefile
+echo "OpenClash source: $(git -C package/OpenClash rev-parse HEAD)"
+grep -E '^(PKG_VERSION|PKG_RELEASE):=' \
+    package/OpenClash/luci-app-openclash/Makefile || true
+
 # Keep the clean system on the same LAN subnet used by this router.
 # Use a targeted replacement so an upstream layout change makes the build fail
 # instead of silently producing firmware with an unexpected management address.
