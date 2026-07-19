@@ -17,8 +17,9 @@ on:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
-  REPO_BRANCH: openwrt-24.10-6.6
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: openwrt-24.10
+  BUILD_VARIANT: immortalwrt-official-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   DIY_P1_SH: diy-part1.sh
@@ -106,7 +107,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_bin_${{ env.BUILD_VARIANT }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
 
     - name: Organize files
@@ -115,6 +116,11 @@ jobs:
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
+        rm -f sha256sums
+        for file in *; do
+          mv "$file" "${BUILD_VARIANT}-${file}"
+        done
+        sha256sum * > "${BUILD_VARIANT}-sha256sums"
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -122,14 +128,14 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_firmware_${{ env.BUILD_VARIANT }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate release tag
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        echo "release_tag=${BUILD_VARIANT}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
         [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
@@ -141,6 +147,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.tag.outputs.release_tag }}
+        name: ${{ env.BUILD_VARIANT }} ${{ env.FILE_DATE }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
