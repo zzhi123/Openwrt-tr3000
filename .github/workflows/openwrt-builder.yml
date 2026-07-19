@@ -19,10 +19,10 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: openwrt-24.10
-  BUILD_VARIANT: immortalwrt-official-24.10
+  FIRMWARE_LABEL: immortalwrt-official-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  PATCH_DIR: patches
+  CUSTOM_PATCH_DIR: patches
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -61,7 +61,7 @@ jobs:
 
     - name: Apply custom patches
       run: |
-        for patch in "$GITHUB_WORKSPACE/$PATCH_DIR"/*.patch; do
+        for patch in "$GITHUB_WORKSPACE/$CUSTOM_PATCH_DIR"/*.patch; do
           [ -e "$patch" ] || continue
           echo "Applying $patch"
           git -C openwrt apply --check "$patch"
@@ -117,7 +117,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
-        name: OpenWrt_bin_${{ env.BUILD_VARIANT }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_bin_${{ env.FIRMWARE_LABEL }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
 
     - name: Organize files
@@ -128,9 +128,9 @@ jobs:
         rm -rf packages
         rm -f sha256sums
         for file in *; do
-          mv "$file" "${BUILD_VARIANT}-${file}"
+          mv "$file" "${FIRMWARE_LABEL}-${file}"
         done
-        sha256sum * > "${BUILD_VARIANT}-sha256sums"
+        sha256sum * > "${FIRMWARE_LABEL}-sha256sums"
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -138,16 +138,15 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_firmware_${{ env.BUILD_VARIANT }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: OpenWrt_firmware_${{ env.FIRMWARE_LABEL }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate release tag
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=${BUILD_VARIANT}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        echo "release_tag=${FIRMWARE_LABEL}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
@@ -157,7 +156,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.tag.outputs.release_tag }}
-        name: ${{ env.BUILD_VARIANT }} ${{ env.FILE_DATE }}
+        name: ${{ env.FIRMWARE_LABEL }} ${{ env.FILE_DATE }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
