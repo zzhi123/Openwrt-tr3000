@@ -18,8 +18,8 @@ on:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: openwrt-24.10
-  FIRMWARE_LABEL: immortalwrt-official-24.10
+  REPO_BRANCH: v24.10.6
+  FIRMWARE_LABEL: immortalwrt-official-24.10.6
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   CUSTOM_PATCH_DIR: patches
