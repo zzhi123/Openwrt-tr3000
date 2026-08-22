@@ -1,13 +1,8 @@
 #
 # https://github.com/P3TERX/Actions-OpenWrt
 #
-# File: .github/workflows/openwrt-bulder.yml
-# Description: Build OpenWrt using GitHub Actions
-#
-# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
+# File: .github/workflows/openwrt-builder.yml
+# Description: Build ImmortalWrt for Cudy TR3000
 #
 
 name: OpenWrt Builder
@@ -19,15 +14,24 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: v24.10.6
+
   FIRMWARE_LABEL: immortalwrt-official-24.10.6
+
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   CUSTOM_PATCH_DIR: patches
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
+
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
+
+  # Kernel ABI currently installed on the router.
+  # opkg status kernel:
+  # 6.6.133~864ea665fff3b8dc865e276be7ed09b6-r1
+  EXPECTED_VERMAGIC: 864ea665fff3b8dc865e276be7ed09b6
+
   TZ: Asia/Shanghai
 
 jobs:
@@ -35,6 +39,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+
     - name: Checkout
       uses: actions/checkout@main
 
@@ -42,13 +47,91 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo rm -rf \
+          /etc/apt/sources.list.d/* \
+          /usr/share/dotnet \
+          /usr/local/lib/android \
+          /opt/ghc \
+          /opt/hostedtoolcache/CodeQL
+
         sudo docker image prune --all --force
+
         sudo -E apt-get -qq update
-        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+
+        sudo -E apt-get -qq install \
+          ack \
+          antlr3 \
+          asciidoc \
+          autoconf \
+          automake \
+          autopoint \
+          binutils \
+          bison \
+          build-essential \
+          bzip2 \
+          ccache \
+          cmake \
+          cpio \
+          curl \
+          device-tree-compiler \
+          fastjar \
+          flex \
+          gawk \
+          gettext \
+          gcc-multilib \
+          g++-multilib \
+          git \
+          gperf \
+          haveged \
+          help2man \
+          intltool \
+          libc6-dev-i386 \
+          libelf-dev \
+          libfuse-dev \
+          libglib2.0-dev \
+          libgmp3-dev \
+          libltdl-dev \
+          libmpc-dev \
+          libmpfr-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libpython3-dev \
+          libreadline-dev \
+          libssl-dev \
+          libtool \
+          lrzsz \
+          mkisofs \
+          msmtp \
+          ninja-build \
+          p7zip \
+          p7zip-full \
+          patch \
+          pkgconf \
+          python2.7 \
+          python3 \
+          python3-pyelftools \
+          python3-setuptools \
+          qemu-utils \
+          rsync \
+          scons \
+          squashfs-tools \
+          subversion \
+          swig \
+          texinfo \
+          uglifyjs \
+          upx-ucl \
+          unzip \
+          vim \
+          wget \
+          xmlto \
+          xxd \
+          zlib1g-dev
+
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
+
         sudo timedatectl set-timezone "$TZ"
+
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
 
@@ -56,107 +139,259 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+        git clone \
+          "$REPO_URL" \
+          -b "$REPO_BRANCH" \
+          openwrt
+
+        ln -sf /workdir/openwrt "$GITHUB_WORKSPACE/openwrt"
+
+        echo "ImmortalWrt source:"
+        git -C openwrt log -1 --oneline
 
     - name: Apply custom patches
       run: |
+        set -e
+
         for patch in "$GITHUB_WORKSPACE/$CUSTOM_PATCH_DIR"/*.patch; do
           [ -e "$patch" ] || continue
-          echo "Applying $patch"
+
+          echo "Applying:"
+          echo "$patch"
+
           git -C openwrt apply --check "$patch"
           git -C openwrt apply "$patch"
         done
 
     - name: Load custom feeds
       run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
+        set -e
+
+        [ -e "$FEEDS_CONF" ] && \
+          mv "$FEEDS_CONF" openwrt/feeds.conf.default
+
+        chmod +x "$DIY_P1_SH"
+
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+        "$GITHUB_WORKSPACE/$DIY_P1_SH"
 
     - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
 
     - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
+      run: |
+        cd openwrt
+        ./scripts/feeds install -a
 
     - name: Load custom configuration
       run: |
+        set -e
+
         [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    - name: Download package
-      id: package
-      run: |
-        cd openwrt
-        make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+        [ -e "$CONFIG_FILE" ] && \
+          mv "$CONFIG_FILE" openwrt/.config
 
-    - name: Compile the firmware
-      id: compile
-      run: |
+        chmod +x "$DIY_P2_SH"
+
         cd openwrt
-        echo -e "$(nproc) thread compile"
-        make -j"$(nproc)"
-        echo "status=success" >> $GITHUB_OUTPUT
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-        - name: Verify kernel ABI and collect mtd-rw
+
+        "$GITHUB_WORKSPACE/$DIY_P2_SH"
+
+        echo
+        echo "===== Initial custom config ====="
+        cat .config
+
+    - name: Generate final configuration
       run: |
         set -e
 
-        EXPECTED_VERMAGIC="864ea665fff3b8dc865e276be7ed09b6"
+        cd openwrt
 
-        VERMAGIC_FILE="$(find openwrt/build_dir \
-          -type f \
-          -path '*/linux-6.6.133/.vermagic' \
-          | head -n 1)"
+        make defconfig
 
-        if [ -z "$VERMAGIC_FILE" ]; then
-          echo "ERROR: Cannot find kernel .vermagic"
+        echo
+        echo "===== Selected device ====="
+        grep '^CONFIG_TARGET_mediatek_filogic_DEVICE_' .config || true
+
+        echo
+        echo "===== mtd-rw configuration ====="
+        grep 'CONFIG_PACKAGE_kmod-mtd-rw' .config || true
+
+        if ! grep -q '^CONFIG_PACKAGE_kmod-mtd-rw=m$' .config; then
+          echo
+          echo "ERROR:"
+          echo "CONFIG_PACKAGE_kmod-mtd-rw=m is not enabled."
           exit 1
         fi
 
-        ACTUAL_VERMAGIC="$(cat "$VERMAGIC_FILE")"
+    - name: Download package sources
+      id: package
+      run: |
+        cd openwrt
 
-        echo "Expected kernel ABI: $EXPECTED_VERMAGIC"
-        echo "Actual kernel ABI:   $ACTUAL_VERMAGIC"
+        make download -j8
+
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile the firmware and packages
+      id: compile
+      run: |
+        set -e
+
+        cd openwrt
+
+        echo "$(nproc) thread compile"
+
+        make -j"$(nproc)"
+
+        echo "status=success" >> "$GITHUB_OUTPUT"
+
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config \
+          | sed -r 's/.*DEVICE_(.*)=y/\1/' \
+          > DEVICE_NAME
+
+        if [ -s DEVICE_NAME ]; then
+          echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> "$GITHUB_ENV"
+        fi
+
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
+
+    ####################################################################
+    # IMPORTANT:
+    # Verify that the newly built kernel has exactly the same ABI/vermagic
+    # as the firmware currently installed on the router.
+    ####################################################################
+
+    - name: Verify kernel ABI
+      run: |
+        set -e
+
+        echo
+        echo "Expected kernel ABI:"
+        echo "$EXPECTED_VERMAGIC"
+        echo
+
+        echo "Searching for kernel .vermagic..."
+
+        find openwrt/build_dir \
+          -type f \
+          -name '.vermagic' \
+          -print
+
+        VERMAGIC_FILE="$(
+          find openwrt/build_dir \
+            -type f \
+            -name '.vermagic' \
+            -path '*linux-mediatek_filogic*' \
+            | head -n 1
+        )"
+
+        if [ -z "$VERMAGIC_FILE" ]; then
+          echo
+          echo "ERROR:"
+          echo "Cannot find mediatek/filogic kernel .vermagic."
+          exit 1
+        fi
+
+        echo
+        echo "Using:"
+        echo "$VERMAGIC_FILE"
+
+        ACTUAL_VERMAGIC="$(tr -d '\r\n ' < "$VERMAGIC_FILE")"
+
+        echo
+        echo "=========================================="
+        echo "Expected ABI : $EXPECTED_VERMAGIC"
+        echo "Actual ABI   : $ACTUAL_VERMAGIC"
+        echo "=========================================="
+        echo
 
         if [ "$ACTUAL_VERMAGIC" != "$EXPECTED_VERMAGIC" ]; then
           echo "ERROR: Kernel ABI mismatch!"
-          echo "Do NOT use the generated kmod on the current router."
+          echo
+          echo "Router currently requires:"
+          echo "6.6.133~${EXPECTED_VERMAGIC}-r1"
+          echo
+          echo "This build generated:"
+          echo "6.6.133~${ACTUAL_VERMAGIC}-r1"
+          echo
+          echo "DO NOT install any generated kmod on the current router."
           exit 1
         fi
 
-        KMOD_FILE="$(find openwrt/bin \
+        echo
+        echo "Kernel ABI MATCHED."
+        echo "The generated kmod can be considered for the current firmware."
+
+    ####################################################################
+    # Find the generated kmod-mtd-rw IPK and put it in its own artifact.
+    ####################################################################
+
+    - name: Collect kmod-mtd-rw
+      run: |
+        set -e
+
+        echo
+        echo "Searching for generated kmod-mtd-rw package..."
+
+        find openwrt/bin \
           -type f \
           -name 'kmod-mtd-rw_*.ipk' \
-          | head -n 1)"
+          -print
+
+        KMOD_FILE="$(
+          find openwrt/bin \
+            -type f \
+            -name 'kmod-mtd-rw_*.ipk' \
+            | head -n 1
+        )"
 
         if [ -z "$KMOD_FILE" ]; then
-          echo "ERROR: kmod-mtd-rw IPK was not generated"
+          echo
+          echo "ERROR:"
+          echo "kmod-mtd-rw IPK was not generated."
           exit 1
         fi
 
-        echo "Found:"
-        echo "$KMOD_FILE"
+        mkdir -p "$GITHUB_WORKSPACE/kmod-output"
 
-        mkdir -p kmod-output
-        cp -v "$KMOD_FILE" kmod-output/
+        cp -v \
+          "$KMOD_FILE" \
+          "$GITHUB_WORKSPACE/kmod-output/"
+
+        echo
+        echo "Generated kmod:"
+        ls -lh "$GITHUB_WORKSPACE/kmod-output/"
+
+        echo
+        echo "SHA256:"
+        sha256sum "$GITHUB_WORKSPACE"/kmod-output/*.ipk
+
+    - name: Upload kmod-mtd-rw
+      uses: actions/upload-artifact@v4
+      with:
+        name: kmod-mtd-rw-24.10.6-6.6.133-864ea665
+        path: kmod-output/*.ipk
+        if-no-files-found: error
+        retention-days: 30
 
     - name: Check space usage
       if: (!cancelled())
-      run: df -hT
+      run: |
+        df -hT
+
+    ####################################################################
+    # The following is the original firmware publishing flow.
+    ####################################################################
 
     - name: Upload bin directory
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v4
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: OpenWrt_bin_${{ env.FIRMWARE_LABEL }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -166,18 +401,25 @@ jobs:
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
+        set -e
+
         cd openwrt/bin/targets/*/*
+
         rm -rf packages
-        rm -f sha256sums *-ram-*-bl2.bin
+        rm -f sha256sums
+        rm -f *-ram-*-bl2.bin
+
         for file in *; do
           mv "$file" "${FIRMWARE_LABEL}-${file}"
         done
+
         sha256sum * > "${FIRMWARE_LABEL}-sha256sums"
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
+
+        echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
+        echo "status=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v4
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware_${{ env.FIRMWARE_LABEL }}${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
@@ -187,9 +429,12 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=${FIRMWARE_LABEL}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        echo "release_tag=${FIRMWARE_LABEL}-$(date +"%Y.%m.%d-%H%M")" \
+          >> "$GITHUB_OUTPUT"
+
         touch release.txt
-        echo "status=success" >> $GITHUB_OUTPUT
+
+        echo "status=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload firmware to release
       uses: softprops/action-gh-release@master
