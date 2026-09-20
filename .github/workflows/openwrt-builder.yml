@@ -112,14 +112,21 @@ jobs:
           find "$target_dir" -maxdepth 1 -type f -print >&2
           exit 1
         }
-        if find "$target_dir" -maxdepth 1 -type f \( -name '*sysupgrade.itb' -o -name '*preloader.bin' -o -name '*bl31-uboot.fip' \) | grep -q .; then
+        if find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*bl2*' -o -iname '*fip*' \) | grep -q .; then
           echo "Unexpected FIT/bootloader artifact in the legacy 122M build" >&2
-          find "$target_dir" -maxdepth 1 -type f \( -name '*sysupgrade.itb' -o -name '*preloader.bin' -o -name '*bl31-uboot.fip' \) >&2
+          find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*bl2*' -o -iname '*fip*' \) >&2
           exit 1
         fi
         manifest=$(find "$target_dir" -maxdepth 1 -type f -name '*.manifest' | head -1)
         test -n "$manifest"
-        for package in luci-app-openclash luci-app-ttyd luci-theme-argon openssh-sftp-server ttyd kmod-usb-net-cdc-ether kmod-usb-net-rndis mtd kmod-mtd-rw; do
+        for package in \
+          luci luci-app-openclash luci-app-package-manager luci-app-ttyd luci-theme-argon \
+          openssh-sftp-server ttyd \
+          kmod-usb-core kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis \
+          kmod-usb-storage kmod-usb-storage-extras kmod-usb-storage-uas \
+          kmod-usb-xhci-hcd kmod-usb-xhci-mtk kmod-usb3 \
+          kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount \
+          mtd kmod-mtd-rw uboot-envtools; do
           grep -q "^${package}[[:space:]]" "$manifest" || {
             echo "Required package missing from manifest: $package" >&2
             exit 1

@@ -20,9 +20,10 @@ It adds a small TR3000 legacy profile for the weekdaycare multi-layout U-Boot:
   'cudy_tr3000-v1-122m-squashfs-sysupgrade.bin'. It is **not** the official
   FIT/'sysupgrade.itb' migration image. The official 25.12 'ubootmod' ITB
   requires its matching BL2/preloader, FIP, UBI environment and boot layout.
-- The image keeps the package set from the 24.10 build: LuCI, Argon,
-  OpenClash (pinned at 'v0.47.156'), ttyd, OpenSSH SFTP, USB networking,
-  'mtd', and 'kmod-mtd-rw'. The last module only unlocks protected MTD
+- The image keeps the package set from the 24.10 build: LuCI and its package
+  manager, Argon, OpenClash (pinned at 'v0.47.156'), ttyd, OpenSSH SFTP,
+  USB networking/storage/XHCI drivers, `uboot-envtools`, `mtd`, and
+  `kmod-mtd-rw`. The last module only unlocks protected MTD
   partitions when deliberately performing a bootloader/FIP operation; it does
   not flash a bootloader by itself. Loading it or writing BL2/FIP is not part
   of an ordinary 122M firmware upgrade and can permanently brick the device.
