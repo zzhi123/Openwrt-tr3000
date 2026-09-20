@@ -125,7 +125,11 @@ jobs:
           kmod-usb-core kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis \
           kmod-usb-storage kmod-usb-storage-extras kmod-usb-storage-uas \
           kmod-usb-xhci-hcd kmod-usb-xhci-mtk kmod-usb3 \
+          kmod-fs-exfat kmod-fs-ext4 kmod-fs-ntfs3 kmod-fs-vfat \
+          kmod-nls-base kmod-nls-cp437 kmod-nls-iso8859-1 kmod-nls-utf8 \
           kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount \
+          luci-app-firewall luci-i18n-base-zh-cn luci-i18n-firewall-zh-cn \
+          luci-i18n-package-manager-zh-cn luci-i18n-ttyd-zh-cn \
           mtd kmod-mtd-rw uboot-envtools; do
           grep -q "^${package}[[:space:]]" "$manifest" || {
             echo "Required package missing from manifest: $package" >&2
