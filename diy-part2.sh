@@ -12,14 +12,13 @@
 
 set -euo pipefail
 
-# Replace the older OpenClash package from the ImmortalWrt LuCI feed with the
-# same tested release used by the snapshot build. Pinning both ImmortalWrt and
-# OpenClash makes this stable branch reproducible; the Mihomo core remains
-# user-managed.
+# Replace the feed copy with a pinned OpenClash release that supports the
+# 25.12 APK-based package system. Pinning the source tag keeps the build
+# reproducible; the Mihomo core remains user-managed.
 rm -rf package/feeds/luci/luci-app-openclash package/OpenClash
 for attempt in 1 2 3; do
     rm -rf package/OpenClash
-    if timeout 300 git clone --branch v0.47.133 --single-branch --depth 1 \
+    if timeout 300 git clone --branch v0.47.156 --single-branch --depth 1 \
         --filter=blob:none --sparse \
         https://github.com/vernesong/OpenClash.git package/OpenClash && \
         timeout 300 git -C package/OpenClash sparse-checkout set \

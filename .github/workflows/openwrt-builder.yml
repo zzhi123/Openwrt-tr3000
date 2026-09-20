@@ -18,8 +18,8 @@ on:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: v24.10.6
-  FIRMWARE_LABEL: immortalwrt-official-24.10.6
+  REPO_BRANCH: v25.12.2
+  FIRMWARE_LABEL: immortalwrt-official-25.12.2-122m
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   CUSTOM_PATCH_DIR: patches
@@ -104,6 +104,27 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j"$(nproc)"
+        target_dir=$(find bin/targets -mindepth 2 -maxdepth 2 -type d -name filogic | head -1)
+        test -n "$target_dir"
+        image=$(find "$target_dir" -maxdepth 1 -type f -name '*cudy_tr3000-v1-122m*squashfs-sysupgrade.bin' | head -1)
+        test -n "$image" || {
+          echo "The expected 122M legacy sysupgrade.bin was not produced" >&2
+          find "$target_dir" -maxdepth 1 -type f -print >&2
+          exit 1
+        }
+        if find "$target_dir" -maxdepth 1 -type f \( -name '*sysupgrade.itb' -o -name '*preloader.bin' -o -name '*bl31-uboot.fip' \) | grep -q .; then
+          echo "Unexpected FIT/bootloader artifact in the legacy 122M build" >&2
+          find "$target_dir" -maxdepth 1 -type f \( -name '*sysupgrade.itb' -o -name '*preloader.bin' -o -name '*bl31-uboot.fip' \) >&2
+          exit 1
+        fi
+        manifest=$(find "$target_dir" -maxdepth 1 -type f -name '*.manifest' | head -1)
+        test -n "$manifest"
+        for package in luci-app-openclash luci-app-ttyd luci-theme-argon openssh-sftp-server ttyd kmod-usb-net-cdc-ether kmod-usb-net-rndis mtd kmod-mtd-rw; do
+          grep -q "^${package}[[:space:]]" "$manifest" || {
+            echo "Required package missing from manifest: $package" >&2
+            exit 1
+          }
+        done
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
@@ -146,7 +167,11 @@ jobs:
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         echo "release_tag=${FIRMWARE_LABEL}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
-        touch release.txt
+        cat > release.txt <<'EOF'
+        This release is the ImmortalWrt 25.12.2 legacy 122M build for the weekdaycare multi-layout U-Boot.
+
+        Use only the `*-cudy_tr3000-v1-122m-squashfs-sysupgrade.bin` image after selecting the U-Boot `122m` layout. This release intentionally does not contain the official FIT/ITB bootloader migration artifacts.
+        EOF
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
