@@ -53,6 +53,8 @@ UBI partition. A 122M legacy '.bin' must not be confused with the official FIT
 本分支的目标是 **ImmortalWrt 25.12.2 正式版 + weekdaycare 多布局 U-Boot 的
 legacy 122M 布局**。这里的 122M 不是官方 `ubootmod` FIT 布局：
 
+版本与布局依据：[ImmortalWrt 25.12.2 官方下载目录](https://downloads.immortalwrt.org/releases/25.12.2/targets/mediatek/filogic/)、[weekdaycare TR3000 构建说明](https://github.com/weekdaycare/immortalwrt-mt7981-cudy-tr3000) 和 [weekdaycare DHCP U-Boot 说明](https://github.com/weekdaycare/bl-mt798x-dhcpd)。
+
 ```text
 UBI 起点：0x5c0000
 UBI 大小：0x7a40000 = 125184 KiB = 122.25 MiB
