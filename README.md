@@ -67,6 +67,8 @@ LuCI 页面直接刷这个首个迁移镜像。切换前应至少备份完整 NA
 U-Boot 控制台确认 `mtd_layout_label=122m`（或等效的 122m 环境变量），
 并确认 `/getmtdlayout` 显示 122m。**不要把官方的
 `cudy_tr3000-v1-ubootmod-squashfs-sysupgrade.itb` 给这个 legacy U-Boot。**
+仅仅来自同一个 GitHub 仓库并不能证明路由器已经安装了相同的 U-Boot；如果
+failsafe 没有列出并能保存 `122m`，应先停止，不要刷这个镜像。
 
 软件包按 24.10.6 分支的选择保留了 LuCI、Argon、ttyd、OpenSSH SFTP、USB
 网络驱动和 OpenClash；OpenClash 在 25.12 分支有意更新为当前最新的
