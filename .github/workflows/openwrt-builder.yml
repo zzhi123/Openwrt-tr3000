@@ -112,9 +112,13 @@ jobs:
           find "$target_dir" -maxdepth 1 -type f -print >&2
           exit 1
         }
-        if find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*bl2*' -o -iname '*fip*' \) | grep -q .; then
+        # The official mediatek target emits generic RAM-loader BL2 files for
+        # several SoCs in the same target directory. They are not TR3000
+        # images and are removed before publishing; reject only FIT/bootloader
+        # artifacts that could be mistaken for this device's firmware.
+        if find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*fip*' \) | grep -q .; then
           echo "Unexpected FIT/bootloader artifact in the legacy 122M build" >&2
-          find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*bl2*' -o -iname '*fip*' \) >&2
+          find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*fip*' \) >&2
           exit 1
         fi
         manifest=$(find "$target_dir" -maxdepth 1 -type f -name '*.manifest' | head -1)
@@ -136,6 +140,12 @@ jobs:
             exit 1
           }
         done
+        for package in mihomo v2ray-geoip 3proxy luci-app-passwall luci-app-ssr-plus; do
+          if grep -q "^${package}[[:space:]]" "$manifest"; then
+            echo "Unexpected proxy package in manifest: $package" >&2
+            exit 1
+          fi
+        done
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
@@ -154,11 +164,11 @@ jobs:
 
     - name: Organize files
       id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
-        rm -f sha256sums *-ram-*-bl2.bin
+        rm -f sha256sums *-ram-*-bl2.bin *-initramfs-*.bin
         for file in *; do
           mv "$file" "${FIRMWARE_LABEL}-${file}"
         done
@@ -175,7 +185,7 @@ jobs:
 
     - name: Generate release tag
       id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         echo "release_tag=${FIRMWARE_LABEL}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         cat > release.txt <<'EOF'
