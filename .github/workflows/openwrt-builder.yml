@@ -19,7 +19,7 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: v25.12.2
-  FIRMWARE_LABEL: immortalwrt-official-25.12.2-122m
+  FIRMWARE_LABEL: immortalwrt-official-25.12.2-112m
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   CUSTOM_PATCH_DIR: patches
@@ -106,9 +106,9 @@ jobs:
         make -j"$(nproc)"
         target_dir=$(find bin/targets -mindepth 2 -maxdepth 2 -type d -name filogic | head -1)
         test -n "$target_dir"
-        image=$(find "$target_dir" -maxdepth 1 -type f -name '*cudy_tr3000-v1-122m*squashfs-sysupgrade.bin' | head -1)
+        image=$(find "$target_dir" -maxdepth 1 -type f -name '*cudy_tr3000-v1-112m*squashfs-sysupgrade.bin' | head -1)
         test -n "$image" || {
-          echo "The expected 122M legacy sysupgrade.bin was not produced" >&2
+          echo "The expected 112M legacy sysupgrade.bin was not produced" >&2
           find "$target_dir" -maxdepth 1 -type f -print >&2
           exit 1
         }
@@ -117,7 +117,7 @@ jobs:
         # images and are removed before publishing; reject only FIT/bootloader
         # artifacts that could be mistaken for this device's firmware.
         if find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*fip*' \) | grep -q .; then
-          echo "Unexpected FIT/bootloader artifact in the legacy 122M build" >&2
+          echo "Unexpected FIT/bootloader artifact in the legacy 112M build" >&2
           find "$target_dir" -maxdepth 1 -type f \( -iname '*.itb' -o -iname '*preloader*' -o -iname '*fip*' \) >&2
           exit 1
         fi
@@ -189,9 +189,9 @@ jobs:
       run: |
         echo "release_tag=${FIRMWARE_LABEL}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         cat > release.txt <<'EOF'
-        This release is the ImmortalWrt 25.12.2 legacy 122M build for the weekdaycare multi-layout U-Boot.
+        This release is the ImmortalWrt 25.12.2 legacy 112M build for the weekdaycare multi-layout U-Boot.
 
-        Use only the `*-cudy_tr3000-v1-122m-squashfs-sysupgrade.bin` image after selecting the U-Boot `122m` layout. This release intentionally does not contain the official FIT/ITB bootloader migration artifacts.
+        Use only the `*-cudy_tr3000-v1-112m-squashfs-sysupgrade.bin` image after selecting the U-Boot `112m` layout. This release intentionally does not contain the official FIT/ITB bootloader migration artifacts.
         EOF
         echo "status=success" >> $GITHUB_OUTPUT
 

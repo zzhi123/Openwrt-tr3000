@@ -1,8 +1,8 @@
-diff --git a/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-122m.dts b/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-122m.dts
+diff --git a/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-112m.dts b/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-112m.dts
 new file mode 100644
 index 0000000..1c22ea1
 --- /dev/null
-+++ b/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-122m.dts
++++ b/target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-112m.dts
 @@ -0,0 +1,26 @@
 +// SPDX-License-Identifier: (GPL-2.0 OR MIT)
 +
@@ -10,8 +10,8 @@ index 0000000..1c22ea1
 +#include "mt7981b-cudy-tr3000-v1.dtsi"
 +
 +/ {
-+	model = "Cudy TR3000 v1 (122M Community U-Boot layout)";
-+	compatible = "cudy,tr3000-v1-122m", "mediatek,mt7981";
++	model = "Cudy TR3000 v1 (112M Community U-Boot layout)";
++	compatible = "cudy,tr3000-v1-112m", "mediatek,mt7981";
 +};
 +
 +&spi_nand {
@@ -28,7 +28,7 @@ index 0000000..1c22ea1
 +};
 +
 +&ubi {
-+	reg = <0x5c0000 0x7a40000>;
++	reg = <0x5c0000 0x7000000>;
 +};
 diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
 index 01aa9a0..c9fff39 100644
@@ -38,7 +38,7 @@ index 01aa9a0..c9fff39 100644
  	cudy,m3000-v2-yt8821-ubootmod|\
  	cudy,tr3000-256mb-v1|\
  	cudy,tr3000-v1|\
-+	cudy,tr3000-v1-122m|\
++	cudy,tr3000-v1-112m|\
  	cudy,tr3000-v1-ubootmod|\
  	glinet,gl-mt2500|\
  	glinet,gl-mt2500-airoha|\
@@ -49,7 +49,7 @@ diff --git a/target/linux/mediatek/base-files/lib/preinit/05_set_preinit_iface b
  	cudy,m3000-v2-yt8821|\
  	cudy,tr3000-256mb-v1|\
  	cudy,tr3000-v1|\
-+	cudy,tr3000-v1-122m|\
++	cudy,tr3000-v1-112m|\
  	cudy,tr3000-v1-ubootmod|\
  	glinet,gl-mt2500|\
  	glinet,gl-mt2500-airoha|\
@@ -61,7 +61,7 @@ index 9f10c2c..060935e 100644
  	cudy,re3000-v1|\
  	cudy,tr3000-256mb-v1|\
  	cudy,tr3000-v1|\
-+	cudy,tr3000-v1-122m|\
++	cudy,tr3000-v1-112m|\
  	cudy,tr3000-v1-ubootmod|\
  	cudy,wr3000u-v1|\
  	cudy,wbr3000uax-v1|\
@@ -73,7 +73,7 @@ index 80597ca..fe11c0f 100644
  	local board=$(board_name)
  
  	case "$board" in
-+	cudy,tr3000-v1-122m)
++	cudy,tr3000-v1-112m)
 +		CI_UBIPART="ubi"
 +		CI_KERNPART="kernel"
 +		CI_ROOTPART="rootfs"
@@ -90,21 +90,21 @@ index 6e93416..da86d9e 100644
  endef
  TARGET_DEVICES += cudy_tr3000-v1
  
-+define Device/cudy_tr3000-v1-122m
++define Device/cudy_tr3000-v1-112m
 +  DEVICE_VENDOR := Cudy
 +  DEVICE_MODEL := TR3000
-+  DEVICE_VARIANT := v1 (122M Community U-Boot layout)
-+  DEVICE_DTS := mt7981b-cudy-tr3000-v1-122m
++  DEVICE_VARIANT := v1 (112M Community U-Boot layout)
++  DEVICE_DTS := mt7981b-cudy-tr3000-v1-112m
 +  DEVICE_DTS_DIR := ../dts
 +  UBINIZE_OPTS := -E 5
 +  BLOCKSIZE := 128k
 +  PAGESIZE := 2048
-+  IMAGE_SIZE := 125184k
++  IMAGE_SIZE := 114688k
 +  KERNEL_IN_UBI := 1
 +  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
 +  DEVICE_PACKAGES := kmod-usb3 kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount
 +endef
-+TARGET_DEVICES += cudy_tr3000-v1-122m
++TARGET_DEVICES += cudy_tr3000-v1-112m
 +
  define Device/cudy_tr3000-v1-ubootmod
    DEVICE_VENDOR := Cudy

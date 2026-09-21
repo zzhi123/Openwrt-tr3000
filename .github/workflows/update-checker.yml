@@ -59,7 +59,7 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             workflow_id: 'openwrt-builder.yml',
-            ref: 'immortalwrt-official-25.12.2-122m'
+            ref: 'immortalwrt-official-25.12.2-112m'
           })
 
     - name: Delete workflow runs

@@ -1,23 +1,22 @@
 **English** | [中文](https://p3terx.com/archives/build-openwrt-with-github-actions.html)
 
-## TR3000 122M / ImmortalWrt 25.12 branch
+## TR3000 112M / ImmortalWrt 25.12 branch
 
-The branch 'immortalwrt-official-25.12.2-122m' builds the latest formal
+The branch 'immortalwrt-official-25.12.2-112m' builds the latest formal
 ImmortalWrt 25.12 release currently selected here: source tag 'v25.12.2'.
 It adds a small TR3000 legacy profile for the weekdaycare multi-layout U-Boot:
 
-- UBI starts at '0x5c0000' and is '0x7a40000' bytes ('125184 KiB',
-  122.25 MiB). The U-Boot layout must be explicitly selected as '122m'
-  (or 'mtd_layout_label=122m') before using this image; a 112m/default
-  layout is not compatible.
-- The first move from the existing 112M system must be done in the
+- UBI starts at '0x5c0000' and is '0x7000000' bytes ('114688 KiB',
+  112 MiB). The U-Boot layout must be explicitly selected as '112m'
+  (or 'mtd_layout_label=112m') before using this image.
+- The first move from the existing 122M system must be done in the
   weekdaycare U-Boot uploader/failsafe after changing and saving the U-Boot
-  layout to 122m. Do not upload this image through the old running system's
-  LuCI/sysupgrade path: its old board/upgrade handler is a different 112M
-  contract. Once this image has booted as 'cudy,tr3000-v1-122m', later
-  same-profile upgrades use the normal legacy NAND path.
+  layout to 112m. Do not upload this first layout-migration image through
+  the running 122M system's LuCI/sysupgrade path. Once this image has booted
+  as 'cudy,tr3000-v1-112m', later same-profile upgrades use the normal
+  legacy NAND path.
 - The output is the traditional
-  'cudy_tr3000-v1-122m-squashfs-sysupgrade.bin'. It is **not** the official
+  'cudy_tr3000-v1-112m-squashfs-sysupgrade.bin'. It is **not** the official
   FIT/'sysupgrade.itb' migration image. The official 25.12 'ubootmod' ITB
   requires its matching BL2/preloader, FIP, UBI environment and boot layout.
 - The image keeps the package set from the 24.10 build: LuCI and its package
@@ -26,7 +25,7 @@ It adds a small TR3000 legacy profile for the weekdaycare multi-layout U-Boot:
   `kmod-mtd-rw`. The last module only unlocks protected MTD
   partitions when deliberately performing a bootloader/FIP operation; it does
   not flash a bootloader by itself. Loading it or writing BL2/FIP is not part
-  of an ordinary 122M firmware upgrade and can permanently brick the device.
+  of an ordinary 112M firmware upgrade and can permanently brick the device.
 
 ### Switching to another 25.x release
 
@@ -36,42 +35,42 @@ then update the label in '.github/workflows/openwrt-builder.yml':
 
 ```yaml
 REPO_BRANCH: v25.12.2       # e.g. v25.12.1 or v25.12.0
-FIRMWARE_LABEL: immortalwrt-official-25.12.2-122m
+FIRMWARE_LABEL: immortalwrt-official-25.12.2-112m
 ```
 
 Also change the branch name and the dispatch ref in
 '.github/workflows/update-checker.yml' if you create a separate branch. Keep
-the 122M patch and the 'cudy_tr3000-v1-122m' target unchanged. After changing
+the 112M patch and the 'cudy_tr3000-v1-112m' target unchanged. After changing
 versions, the build must be completed and its manifest/image geometry audited
 before flashing.
 
 Before changing the U-Boot layout, back up BL2, FIP, Factory, bdinfo, and the
-UBI partition. A 122M legacy '.bin' must not be confused with the official FIT
+UBI partition. A 112M legacy '.bin' must not be confused with the official FIT
 '.itb' migration.
 
 ### 中文操作说明
 
 本分支的目标是 **ImmortalWrt 25.12.2 正式版 + weekdaycare 多布局 U-Boot 的
-legacy 122M 布局**。这里的 122M 不是官方 `ubootmod` FIT 布局：
+legacy 112M 布局**。这里的 112M 不是官方 `ubootmod` FIT 布局：
 
 版本与布局依据：[ImmortalWrt 25.12.2 官方下载目录](https://downloads.immortalwrt.org/releases/25.12.2/targets/mediatek/filogic/)、[weekdaycare TR3000 构建说明](https://github.com/weekdaycare/immortalwrt-mt7981-cudy-tr3000) 和 [weekdaycare DHCP U-Boot 说明](https://github.com/weekdaycare/bl-mt798x-dhcpd)。
 
 ```text
 UBI 起点：0x5c0000
-UBI 大小：0x7a40000 = 125184 KiB = 122.25 MiB
+UBI 大小：0x7000000 = 114688 KiB = 112 MiB
 卷结构：kernel / rootfs / rootfs_data
-升级包：cudy_tr3000-v1-122m-squashfs-sysupgrade.bin
+升级包：cudy_tr3000-v1-112m-squashfs-sysupgrade.bin
 ```
 
-首次从当前 112M 系统迁移时，必须在 weekdaycare U-Boot 的 failsafe/uploader
-中选择并保存 `122m` 布局，再写入本分支的 `.bin`；不能从旧 112M 系统的
+首次从当前 122M 系统迁移时，必须在 weekdaycare U-Boot 的 failsafe/uploader
+中选择并保存 `112m` 布局，再写入本分支的 `.bin`；不能从当前 122M 系统的
 LuCI 页面直接刷这个首个迁移镜像。切换前应至少备份完整 NAND，以及
 `BL2`、`FIP`、`Factory`、`bdinfo`、`u-boot-env` 和现有 `ubi`。刷写前在
-U-Boot 控制台确认 `mtd_layout_label=122m`（或等效的 122m 环境变量），
-并确认 `/getmtdlayout` 显示 122m。**不要把官方的
+U-Boot 控制台确认 `mtd_layout_label=112m`（或等效的 112m 环境变量），
+并确认 `/getmtdlayout` 显示 112m。**不要把官方的
 `cudy_tr3000-v1-ubootmod-squashfs-sysupgrade.itb` 给这个 legacy U-Boot。**
 仅仅来自同一个 GitHub 仓库并不能证明路由器已经安装了相同的 U-Boot；如果
-failsafe 没有列出并能保存 `122m`，应先停止，不要刷这个镜像。
+failsafe 没有列出并能保存 `112m`，应先停止，不要刷这个镜像。
 
 软件包按 24.10.6 分支的选择保留了 LuCI、Argon、ttyd、OpenSSH SFTP、USB
 网络驱动和 OpenClash；OpenClash 在 25.12 分支有意更新为当前最新的
@@ -87,7 +86,7 @@ ImmortalWrt 使用完整 tag 名称，而不是把版本写成 `25.1` 或 `25.0`
 25.12 系列应写成 `v25.12.0`、`v25.12.1` 或 `v25.12.2`；如果以后出现
 新的正式 tag，必须同时修改两个 workflow 的 `REPO_BRANCH`、构建标签以及
 （若另建分支）`update-checker.yml` 的 dispatch `ref`。换到不同的主版本时，
-还要重新执行 patch 的 `git apply --check`、确认 122M DTS/升级处理器和包
+还要重新执行 patch 的 `git apply --check`、确认 112M DTS/升级处理器和包
 依赖仍适用，不能只改一个版本字符串就直接刷写。
 
 # Actions-OpenWrt
